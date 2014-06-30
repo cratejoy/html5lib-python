@@ -176,6 +176,7 @@ class HTMLParser(object):
         for token in self.normalizedTokens():
             new_token = token
             while new_token is not None:
+                log.debug(u"Token {} Phase = {}".format(new_token, self.phase))
                 currentNode = self.tree.openElements[-1] if self.tree.openElements else None
                 currentNodeNamespace = currentNode.namespace if currentNode else None
                 currentNodeName = currentNode.name if currentNode else None
@@ -421,6 +422,7 @@ class HTMLParser(object):
                 new_phase = self.phases["inBody"]
                 break
 
+        log.debug(u"Changing phase to {}".format(new_phase))
         self.phase = new_phase
 
     def parseRCDataRawtext(self, token, contentType):
@@ -438,6 +440,7 @@ class HTMLParser(object):
 
         self.originalPhase = self.phase
 
+        log.debug(u"Changing phase to text")
         self.phase = self.phases["text"]
 
 
@@ -825,6 +828,8 @@ def getPhases(debug):
         def endTagHead(self, token):
             node = self.parser.tree.openElements.pop()
             assert node.name == "head", "Expected head got %s" % node.name
+            log = logging.getLogger(u"html5lib")
+            log.debug(u"Switching phase to afterHead")
             self.parser.phase = self.parser.phases["afterHead"]
 
         def endTagHtmlBodyBr(self, token):
@@ -835,6 +840,8 @@ def getPhases(debug):
             self.parser.parseError("unexpected-end-tag", {"name": token["name"]})
 
         def anythingElse(self):
+            log = logging.getLogger(u"html5lib")
+            log.debug(u"Implied end head tag")
             self.endTagHead(impliedTagToken("head"))
 
     # XXX If we implement a parser for which scripting is disabled we need to
@@ -905,6 +912,8 @@ def getPhases(debug):
 
         def anythingElse(self):
             self.tree.insertElement(impliedTagToken("body", "StartTag"))
+            log = logging.getLogger(u"html5lib")
+            log.debug(u"Changing phase to body")
             self.parser.phase = self.parser.phases["inBody"]
             self.parser.framesetOK = True
 

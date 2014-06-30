@@ -324,6 +324,17 @@ class HTMLTokenizer(object):
                 "selfClosing": False
             })
             self.state = self.dataState
+        elif data is EOF:
+            self.tokenQueue.append({"type": tokenTypes["ParseError"], "data":
+                                    "expected-jinja-statement-closing-tag-but-got-eof",
+                                    "datavars": {"data": data}})
+            self.state = self.dataState
+        else:
+            self.tokenQueue.append({"type": tokenTypes["ParseError"], "data":
+                                    "expected-jinja-statement-closing-tag-but-got-char",
+                                    "datavars": {"data": data}})
+            self.stream.unget(data)
+            self.state = self.bogusCommentState
 
         #self.state = self.dataState
         return True
@@ -339,6 +350,17 @@ class HTMLTokenizer(object):
                 "selfClosing": False
             })
             self.state = self.dataState
+        elif data is EOF:
+            self.tokenQueue.append({"type": tokenTypes["ParseError"], "data":
+                                    "expected-jinja-variable-closing-tag-but-got-eof",
+                                    "datavars": {"data": data}})
+            self.state = self.dataState
+        else:
+            self.tokenQueue.append({"type": tokenTypes["ParseError"], "data":
+                                    "expected-jinja-variable-closing-tag-but-got-char",
+                                    "datavars": {"data": data}})
+            self.stream.unget(data)
+            self.state = self.bogusCommentState
 
         #self.state = self.dataState
         return True
@@ -349,8 +371,9 @@ class HTMLTokenizer(object):
         if data == "%":
             self.state = self.jinjaStatementEndState
         elif data is EOF:
-            # Tokenization ends.
-            return False
+            self.tokenQueue.append({"type": tokenTypes["ParseError"], "data":
+                                    "eof-in-jinja-statement"})
+            self.state = self.dataState
         else:
             chars = self.stream.charsUntil(("%", "\u0000"))
             self.tokenQueue.append({"type": tokenTypes["JinjaStatementTag"], "data":
@@ -364,8 +387,9 @@ class HTMLTokenizer(object):
         if data == "}":
             self.state = self.jinjaVariableEndState
         elif data is EOF:
-            # Tokenization ends.
-            return False
+            self.tokenQueue.append({"type": tokenTypes["ParseError"], "data":
+                                    "eof-in-jinja-variable"})
+            self.state = self.dataState
         else:
             chars = self.stream.charsUntil(("}", "\u0000"))
             self.tokenQueue.append({"type": tokenTypes["JinjaVariableTag"], "data":
