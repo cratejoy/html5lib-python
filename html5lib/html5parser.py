@@ -1,6 +1,8 @@
 from __future__ import absolute_import, division, unicode_literals
 from six import with_metaclass
 
+import logging
+
 import types
 
 from . import inputstream
@@ -18,6 +20,9 @@ from .constants import cdataElements, rcdataElements
 from .constants import tokenTypes, ReparseException, namespaces
 from .constants import htmlIntegrationPointElements, mathmlTextIntegrationPointElements
 from .constants import adjustForeignAttributes as adjustForeignAttributesMap
+
+
+log = logging.getLogger(u"html5lib")
 
 
 def parse(doc, treebuilder="etree", encoding=None,
@@ -161,6 +166,12 @@ class HTMLParser(object):
         CommentToken = tokenTypes["Comment"]
         DoctypeToken = tokenTypes["Doctype"]
         ParseErrorToken = tokenTypes["ParseError"]
+        JinjaStatementStartTag = tokenTypes["JinjaStatementStartTag"]
+        JinjaStatementEndTag = tokenTypes["JinjaStatementEndTag"]
+        JinjaStatementTag = tokenTypes["JinjaStatementTag"]
+        JinjaVariableStartTag = tokenTypes["JinjaVariableStartTag"]
+        JinjaVariableEndTag = tokenTypes["JinjaVariableEndTag"]
+        JinjaVariableTag = tokenTypes["JinjaVariableTag"]
 
         for token in self.normalizedTokens():
             new_token = token
@@ -202,6 +213,18 @@ class HTMLParser(object):
                         new_token = phase.processComment(new_token)
                     elif type == DoctypeToken:
                         new_token = phase.processDoctype(new_token)
+                    elif type == JinjaStatementStartTag:
+                        new_token = phase.processJinjaStatementStartTag(new_token)
+                    elif type == JinjaStatementEndTag:
+                        new_token = phase.processJinjaStatementEndTag(new_token)
+                    elif type == JinjaStatementTag:
+                        new_token = phase.processJinjaStatementTag(new_token)
+                    elif type == JinjaVariableStartTag:
+                        new_token = phase.processJinjaVariableStartTag(new_token)
+                    elif type == JinjaVariableEndTag:
+                        new_token = phase.processJinjaVariableEndTag(new_token)
+                    elif type == JinjaVariableTag:
+                        new_token = phase.processJinjaVariableTag(new_token)
 
             if (type == StartTagToken and token["selfClosing"]
                     and not token["selfClosingAcknowledged"]):
@@ -474,6 +497,24 @@ def getPhases(debug):
 
         def processSpaceCharacters(self, token):
             self.tree.insertText(token["data"])
+
+        def processJinjaStatementStartTag(self, token):
+            pass
+
+        def processJinjaStatementEndTag(self, token):
+            pass
+
+        def processJinjaStatementTag(self, token):
+            pass
+
+        def processJinjaVariableStartTag(self, token):
+            pass
+
+        def processJinjaVariableEndTag(self, token):
+            pass
+
+        def processJinjaVariableTag(self, token):
+            pass
 
         def processStartTag(self, token):
             return self.startTagHandler[token["name"]](token)

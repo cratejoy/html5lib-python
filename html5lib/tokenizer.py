@@ -5,6 +5,10 @@ try:
 except NameError:
     pass
 
+
+import sys
+import logging
+
 from collections import deque
 
 from .constants import spaceCharacters
@@ -19,6 +23,8 @@ from .inputstream import HTMLInputStream
 from .trie import Trie
 
 entitiesTrie = Trie(entities)
+
+log = logging.getLogger(u"html5lib")
 
 
 class HTMLTokenizer(object):
@@ -254,6 +260,8 @@ class HTMLTokenizer(object):
             self.state = self.entityDataState
         elif data == "<":
             self.state = self.tagOpenState
+        elif data == "{":
+            self.state = self.jinjaOpenState
         elif data == "\u0000":
             self.tokenQueue.append({"type": tokenTypes["ParseError"],
                                     "data": "invalid-codepoint"})
@@ -280,6 +288,89 @@ class HTMLTokenizer(object):
     def entityDataState(self):
         self.consumeEntity()
         self.state = self.dataState
+        return True
+
+    def jinjaOpenState(self):
+        data = self.stream.char()
+
+        if data == "{":
+            self.tokenQueue.append({
+                "type": tokenTypes["JinjaVariableStartTag"],
+                "name": "{{", "data": [],
+                "selfClosing": False
+            })
+
+            self.state = self.jinjaVariableState
+        elif data == "%":
+            self.tokenQueue.append({
+                "type": tokenTypes["JinjaStatementStartTag"],
+                "name": "{%", "data": [],
+                "selfClosing": False
+            })
+
+            self.state = self.jinjaStatementState
+
+        #self.state = self.dataState
+        return True
+
+    def jinjaStatementEndState(self):
+        # We got a {
+        data = self.stream.char()
+
+        if data == "}":
+            self.tokenQueue.append({
+                "type": tokenTypes["JinjaStatementEndTag"],
+                "name": "%}", "data": [],
+                "selfClosing": False
+            })
+            self.state = self.dataState
+
+        #self.state = self.dataState
+        return True
+
+    def jinjaVariableEndState(self):
+        # We got a {
+        data = self.stream.char()
+
+        if data == "}":
+            self.tokenQueue.append({
+                "type": tokenTypes["JinjaVariableEndTag"],
+                "name": "}}", "data": [],
+                "selfClosing": False
+            })
+            self.state = self.dataState
+
+        #self.state = self.dataState
+        return True
+
+    def jinjaStatementState(self):
+        data = self.stream.char()
+
+        if data == "%":
+            self.state = self.jinjaStatementEndState
+        elif data is EOF:
+            # Tokenization ends.
+            return False
+        else:
+            chars = self.stream.charsUntil(("%", "\u0000"))
+            self.tokenQueue.append({"type": tokenTypes["JinjaStatementTag"], "data":
+                                    data + chars})
+
+        return True
+
+    def jinjaVariableState(self):
+        data = self.stream.char()
+
+        if data == "}":
+            self.state = self.jinjaVariableEndState
+        elif data is EOF:
+            # Tokenization ends.
+            return False
+        else:
+            chars = self.stream.charsUntil(("}", "\u0000"))
+            self.tokenQueue.append({"type": tokenTypes["JinjaVariableTag"], "data":
+                                    data + chars})
+
         return True
 
     def rcdataState(self):
