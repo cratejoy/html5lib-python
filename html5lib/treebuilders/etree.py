@@ -3,6 +3,8 @@ from six import text_type
 
 import re
 
+import logging
+
 from . import _base
 from .. import ihatexml
 from .. import constants
@@ -10,6 +12,8 @@ from ..constants import namespaces
 from ..utils import moduleFactoryFactory
 
 tag_regexp = re.compile("{([^}]*)}(.*)")
+
+log = logging.getLogger("html5lib")
 
 
 def getETreeBuilder(ElementTreeImplementation, fullTree=False):
@@ -59,6 +63,7 @@ def getETreeBuilder(ElementTreeImplementation, fullTree=False):
             return self._element.attrib
 
         def _setAttributes(self, attributes):
+            log.debug(u"Attributes {}".format(attributes))
             # Delete existing attributes first
             # XXX - there may be a better way to do this...
             for key in list(self._element.attrib.keys()):

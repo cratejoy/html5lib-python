@@ -3091,7 +3091,8 @@ tokenTypes = {
     "JinjaStatementTag": 10,
     "JinjaVariableStartTag": 11,
     "JinjaVariableEndTag": 12,
-    "JinjaVariableTag": 13
+    "JinjaVariable": 13,
+    "JinjaFilter": 14
 }
 
 tagTokenTypes = frozenset((tokenTypes["StartTag"], tokenTypes["EndTag"],

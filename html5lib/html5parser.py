@@ -171,7 +171,8 @@ class HTMLParser(object):
         JinjaStatementTag = tokenTypes["JinjaStatementTag"]
         JinjaVariableStartTag = tokenTypes["JinjaVariableStartTag"]
         JinjaVariableEndTag = tokenTypes["JinjaVariableEndTag"]
-        JinjaVariableTag = tokenTypes["JinjaVariableTag"]
+        JinjaVariable = tokenTypes["JinjaVariable"]
+        JinjaFilter = tokenTypes["JinjaFilter"]
 
         for token in self.normalizedTokens():
             new_token = token
@@ -187,7 +188,11 @@ class HTMLParser(object):
                     self.parseError(new_token["data"], new_token.get("datavars", {}))
                     new_token = None
                 else:
-                    if (len(self.tree.openElements) == 0 or
+                    if type in (JinjaVariableStartTag, JinjaVariableEndTag, JinjaVariable, JinjaFilter):
+                        log.debug(u"Type is a jinja tag")
+                        phase = self.phases["inJinjaVariable"]
+                    elif (
+                        len(self.tree.openElements) == 0 or
                         currentNodeNamespace == self.tree.defaultNamespace or
                         (self.isMathMLTextIntegrationPoint(currentNode) and
                          ((type == StartTagToken and
@@ -224,8 +229,10 @@ class HTMLParser(object):
                         new_token = phase.processJinjaVariableStartTag(new_token)
                     elif type == JinjaVariableEndTag:
                         new_token = phase.processJinjaVariableEndTag(new_token)
-                    elif type == JinjaVariableTag:
-                        new_token = phase.processJinjaVariableTag(new_token)
+                    elif type == JinjaVariable:
+                        new_token = phase.processJinjaVariable(new_token)
+                    elif type == JinjaFilter:
+                        new_token = phase.processJinjaFilter(new_token)
 
             if (type == StartTagToken and token["selfClosing"]
                     and not token["selfClosingAcknowledged"]):
@@ -516,7 +523,10 @@ def getPhases(debug):
         def processJinjaVariableEndTag(self, token):
             pass
 
-        def processJinjaVariableTag(self, token):
+        def processJinjaVariable(self, token):
+            pass
+
+        def processJinjaFilterTag(self, token):
             pass
 
         def processStartTag(self, token):
@@ -534,6 +544,40 @@ def getPhases(debug):
 
         def processEndTag(self, token):
             return self.endTagHandler[token["name"]](token)
+
+    class InJinjaVariablePhase(Phase):
+        def processJinjaVariableStartTag(self, token):
+            log = logging.getLogger('html5lib')
+            log.debug(u"InJinja: Start Tag")
+            self.tree.reconstructActiveFormattingElements()
+            self.tree.insertElement(token)
+
+        def processJinjaVariableEndTag(self, token):
+            log = logging.getLogger('html5lib')
+            log.debug(u"InJinja: End Tag {}".format(token["name"]))
+            for node in self.tree.openElements[::-1]:
+                log.debug(u"InJinja: Open tag {} token {}".format(node, token))
+                if node.name == token["name"]:
+                    self.tree.generateImpliedEndTags(exclude=token["name"])
+                    log.debug(u"InJinja: Implied end tag {} {}".format(self.tree.openElements[-1].name, token["name"]))
+                    if self.tree.openElements[-1].name != token["name"]:
+                        self.parser.parseError("unexpected-end-tag", {"name": token["name"]})
+                    while self.tree.openElements.pop() != node:
+                        pass
+                    break
+                else:
+                    if node.nameTuple in specialElements:
+                        log.debug(u"Nametuple {} in {}".format(node.nameTuple, specialElements))
+                        self.parser.parseError("unexpected-end-tag", {"name": token["name"]})
+                        break
+
+        def processJinjaVariable(self, token):
+            element = self.tree.createElementWithoutNamespace(token)
+            self.tree.openElements[-1].appendChild(element)
+
+        def processJinjaFilter(self, token):
+            element = self.tree.createElementWithoutNamespace(token)
+            self.tree.openElements[-1].appendChild(element)
 
     class InitialPhase(Phase):
         def processSpaceCharacters(self, token):
@@ -2739,6 +2783,7 @@ def getPhases(debug):
         "inHead": InHeadPhase,
         # XXX "inHeadNoscript": InHeadNoScriptPhase,
         "afterHead": AfterHeadPhase,
+        "inJinjaVariable": InJinjaVariablePhase,
         "inBody": InBodyPhase,
         "text": TextPhase,
         "inTable": InTablePhase,

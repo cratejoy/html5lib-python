@@ -3,6 +3,11 @@ from six import text_type
 
 from ..constants import scopingElements, tableInsertModeElements, namespaces
 
+import logging
+
+log = logging.getLogger("html5lib")
+
+
 # The scope markers are inserted when entering object elements,
 # marquees, table cells, and table captions, and are used to prevent formatting
 # from "leaking" into tables, object elements, and marquees.
@@ -266,6 +271,13 @@ class TreeBuilder(object):
         name = token["name"]
         namespace = token.get("namespace", self.defaultNamespace)
         element = self.elementClass(name, namespace)
+        element.attributes = token["data"]
+        return element
+
+    def createElementWithoutNamespace(self, token):
+        """Create an element but don't insert it anywhere"""
+        name = token["name"]
+        element = self.elementClass(name)
         element.attributes = token["data"]
         return element
 
