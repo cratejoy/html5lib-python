@@ -172,6 +172,7 @@ class HTMLParser(object):
         JinjaVariableStartTag = tokenTypes["JinjaVariableStartTag"]
         JinjaVariableEndTag = tokenTypes["JinjaVariableEndTag"]
         JinjaVariable = tokenTypes["JinjaVariable"]
+        JinjaPipe = tokenTypes["JinjaPipe"]
         JinjaFilter = tokenTypes["JinjaFilter"]
 
         for token in self.normalizedTokens():
@@ -188,7 +189,7 @@ class HTMLParser(object):
                     self.parseError(new_token["data"], new_token.get("datavars", {}))
                     new_token = None
                 else:
-                    if type in (JinjaVariableStartTag, JinjaVariableEndTag, JinjaVariable, JinjaFilter):
+                    if type in (JinjaVariableStartTag, JinjaVariableEndTag, JinjaVariable, JinjaFilter, JinjaPipe):
                         log.debug(u"Type is a jinja tag")
                         phase = self.phases["inJinjaVariable"]
                     elif (
@@ -231,6 +232,8 @@ class HTMLParser(object):
                         new_token = phase.processJinjaVariableEndTag(new_token)
                     elif type == JinjaVariable:
                         new_token = phase.processJinjaVariable(new_token)
+                    elif type == JinjaPipe:
+                        new_token = phase.processJinjaPipe(new_token)
                     elif type == JinjaFilter:
                         new_token = phase.processJinjaFilter(new_token)
 
@@ -429,7 +432,7 @@ class HTMLParser(object):
                 new_phase = self.phases["inBody"]
                 break
 
-        log.debug(u"Changing phase to {}".format(new_phase))
+        #log.debug(u"Changing phase to {}".format(new_phase))
         self.phase = new_phase
 
     def parseRCDataRawtext(self, token, contentType):
@@ -526,6 +529,9 @@ def getPhases(debug):
         def processJinjaVariable(self, token):
             pass
 
+        def processJinjaPipe(self, token):
+            pass
+
         def processJinjaFilterTag(self, token):
             pass
 
@@ -572,6 +578,10 @@ def getPhases(debug):
                         break
 
         def processJinjaVariable(self, token):
+            element = self.tree.createElementWithoutNamespace(token)
+            self.tree.openElements[-1].appendChild(element)
+
+        def processJinjaPipe(self, token):
             element = self.tree.createElementWithoutNamespace(token)
             self.tree.openElements[-1].appendChild(element)
 
