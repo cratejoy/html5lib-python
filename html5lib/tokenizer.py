@@ -390,8 +390,17 @@ class HTMLTokenizer(object):
 
         if data == "}":
             self.state = self.jinjaVariableEndState
-        #elif data == "(":
-            #self.state = self.jinjaArgState
+        elif data == "(":
+            self.currentToken = {
+                "type": tokenTypes["JinjaArgumentStartTag"],
+                "name": u"jinjaargumentstarttag", "data": {},
+                "namespace": None,
+                "selfClosing": False
+            }
+
+            self.tokenQueue.append(self.currentToken)
+
+            self.state = self.jinjaArgState
         elif data is EOF:
             self.tokenQueue.append({"type": tokenTypes["ParseError"], "data":
                                     "eof-in-jinja-variable"})
@@ -430,6 +439,40 @@ class HTMLTokenizer(object):
                                     "expected-jinja-pipe-got-character"})
             self.stream.unget(data)
             self.state = self.bogusCommentState
+
+        return True
+
+    def jinjaArgState(self):
+        data = self.stream.char()
+
+        log.debug(u"Arg {}".format(data))
+        print "Got data", data
+
+        if data == ")":
+            self.tokenQueue.append({
+                "type": tokenTypes["JinjaArgumentEndTag"],
+                "name": u"jinjaargumentendtag", "data": [],
+                "selfClosing": False
+            })
+            self.state = self.jinjaVariableState
+        elif data is EOF:
+            self.tokenQueue.append({"type": tokenTypes["ParseError"], "data":
+                                    "eof-in-jinja-argument"})
+            self.state = self.dataState
+        elif data in spaceCharacters:
+            # Skip spaces
+            pass
+        else:
+            chars = self.stream.charsUntil(frozenset((",", ")")))
+
+            print "Got chars", chars
+
+            self.currentToken = {"type": tokenTypes["JinjaArgument"], 
+                                    "name": "jinjaargument", "selfClosing": True, "data": { 
+                                        "value": data + chars,
+                                        "position": self.stream.position(),
+                                    }}
+            self.tokenQueue.append(self.currentToken)
 
         return True
 
