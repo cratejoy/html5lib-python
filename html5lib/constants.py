@@ -3088,7 +3088,7 @@ tokenTypes = {
     "ParseError": 7,
     "JinjaStatementStartTag": 8,
     "JinjaStatementEndTag": 9,
-    "JinjaStatementTag": 10,
+    "JinjaStatement": 10,
     "JinjaVariableStartTag": 11,
     "JinjaVariableEndTag": 12,
     "JinjaVariable": 13,
