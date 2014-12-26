@@ -15,52 +15,61 @@ def dump(tree, tabs=0):
 
 class JinjaTestCase(unittest.TestCase):
     def setUp(self):
-        self.parser = html5lib.HTMLParser(strict=False, namespaceHTMLElements=False)
+        self.parser = html5lib.HTMLParser(strict=True, namespaceHTMLElements=False)
 
     def test_var_1(self):
         html_string = """<h1>{{ hi }}</h1>"""
 
         tree = self.parser.parseFragment(html_string)
 
-        h1 = tree[0]
-        jt = h1[0]
-        var1 = jt[0]
-        self.assertEqual(h1.tag, "h1")
-        self.assertEqual(var1.tag, 'jinjavariable')
-        self.assertEqual(var1.attrib['value'], 'hi')
+        self.assertTree(tree, [{
+            'tag': 'h1',
+            'children': [{
+                'tag': 'jinjavariabletag',
+                'children': [{
+                    'tag': 'jinjavariable',
+                    'value': 'hi'
+                }]
+            }]
+        }])
 
     def test_var_2(self):
         html_string = """<h1>{{ a.b }}</h1>"""
 
         tree = self.parser.parseFragment(html_string)
 
-        h1 = tree[0]
-        jt = h1[0]
-        var1 = jt[0]
-        self.assertEqual(h1.tag, "h1")
-        self.assertEqual(var1.tag, 'jinjavariable')
-        self.assertEqual(var1.attrib['value'], 'a.b')
+        self.assertTree(tree, [{
+            'tag': 'h1',
+            'children': [{
+                'tag': 'jinjavariabletag',
+                'children': [{
+                    'tag': 'jinjavariable',
+                    'value': 'a.b'
+                }]
+            }]
+        }])
 
     def test_filter_1(self):
         html_string = """<h1>{{ hi | yo }}</h1>"""
 
         tree = self.parser.parseFragment(html_string)
 
-        h1 = tree[0]
-        self.assertEqual(h1.tag, "h1")
-
-        jt = h1[0]
-
-        hi = jt[0]
-        pipe1 = jt[1]
-        yo = jt[2]
-
-        self.assertEqual(hi.tag, 'jinjavariable')
-        self.assertEqual(hi.attrib['value'], 'hi')
-        self.assertEqual(pipe1.tag, 'jinjapipe')
-        self.assertEqual(pipe1.attrib['value'], '|')
-        self.assertEqual(yo.tag, 'jinjafilter')
-        self.assertEqual(yo.attrib['value'], 'yo')
+        self.assertTree(tree, [{
+            'tag': 'h1',
+            'children': [{
+                'tag': 'jinjavariabletag',
+                'children': [{
+                    'tag': 'jinjavariable',
+                    'value': 'hi'
+                }, {
+                    'tag': 'jinjapipe',
+                    'value': '|'
+                }, {
+                    'tag': 'jinjafilter',
+                    'value': 'yo'
+                }]
+            }]
+        }])
 
     def test_filter_2(self):
         html_string = """<h1>{{ hi | yo("hi") }}</h1>"""
@@ -68,26 +77,26 @@ class JinjaTestCase(unittest.TestCase):
         tree = self.parser.parseFragment(html_string)
         dump(tree)
 
-        h1 = tree[0]
-        self.assertEqual(h1.tag, "h1")
-
-        jt = h1[0]
-
-        hi = jt[0]
-        pipe1 = jt[1]
-        yo = jt[2]
-
-        self.assertEqual(hi.tag, 'jinjavariable')
-        self.assertEqual(hi.attrib['value'], 'hi')
-        self.assertEqual(pipe1.tag, 'jinjapipe')
-        self.assertEqual(pipe1.attrib['value'], '|')
-        self.assertEqual(yo.tag, 'jinjafilter')
-        self.assertEqual(yo.attrib['value'], 'yo')
-
-        arg1 = yo[0]
-
-        self.assertEqual(arg1.tag, 'jinjaargument')
-        self.assertEqual(arg1.attrib['value'], '"hi"')
+        self.assertTree(tree, [{
+            'tag': 'h1',
+            'children': [{
+                'tag': 'jinjavariabletag',
+                'children': [{
+                    'tag': 'jinjavariable',
+                    'value': 'hi'
+                }, {
+                    'tag': 'jinjapipe',
+                    'value': '|'
+                }, {
+                    'tag': 'jinjafilter',
+                    'value': 'yo',
+                    'children': [{
+                        'tag': 'jinjaargument',
+                        'value': '"hi"'
+                    }]
+                }]
+            }]
+        }])
 
     def test_filter_3(self):
         html_string = """<h1>{{ hi | yo("hi", "mike") }}</h1>"""
@@ -95,29 +104,29 @@ class JinjaTestCase(unittest.TestCase):
         tree = self.parser.parseFragment(html_string)
         dump(tree)
 
-        h1 = tree[0]
-        self.assertEqual(h1.tag, "h1")
-
-        jt = h1[0]
-
-        hi = jt[0]
-        pipe1 = jt[1]
-        yo = jt[2]
-
-        self.assertEqual(hi.tag, 'jinjavariable')
-        self.assertEqual(hi.attrib['value'], 'hi')
-        self.assertEqual(pipe1.tag, 'jinjapipe')
-        self.assertEqual(pipe1.attrib['value'], '|')
-        self.assertEqual(yo.tag, 'jinjafilter')
-        self.assertEqual(yo.attrib['value'], 'yo')
-
-        arg1 = yo[0]
-        arg2 = yo[1]
-
-        self.assertEqual(arg1.tag, 'jinjaargument')
-        self.assertEqual(arg1.attrib['value'], '"hi"')
-        self.assertEqual(arg2.tag, 'jinjaargument')
-        self.assertEqual(arg2.attrib['value'], '"mike"')
+        self.assertTree(tree, [{
+            'tag': 'h1',
+            'children': [{
+                'tag': 'jinjavariabletag',
+                'children': [{
+                    'tag': 'jinjavariable',
+                    'value': 'hi'
+                }, {
+                    'tag': 'jinjapipe',
+                    'value': '|'
+                }, {
+                    'tag': 'jinjafilter',
+                    'value': 'yo',
+                    'children': [{
+                        'tag': 'jinjaargument',
+                        'value': '"hi"'
+                    }, {
+                        'tag': 'jinjaargument',
+                        'value': '"mike"'
+                    }]
+                }]
+            }]
+        }])
 
     def test_jinja_block(self):
         html_string = """
@@ -125,12 +134,11 @@ class JinjaTestCase(unittest.TestCase):
         """
 
         tree = self.parser.parseFragment(html_string)
-        dump(tree)
 
-        block = tree[0]
-
-        self.assertEqual(block.tag, 'jinjablock')
-        self.assertEqual(block.text, 'Hi')
+        self.assertTree(tree, [{
+            'tag': 'jinjablock',
+            'text': 'Hi'
+        }])
 
     def test_jinja_block_in_title(self):
         html_string = """
@@ -138,14 +146,14 @@ class JinjaTestCase(unittest.TestCase):
         """
 
         tree = self.parser.parseFragment(html_string)
-        dump(tree)
 
-        title = tree[0]
-        block = title[0]
-
-        self.assertEqual(title.tag, 'title')
-        self.assertEqual(block.tag, 'jinjablock')
-        self.assertEqual(block.attrib['value'], 'title')
+        self.assertTree(tree, [{
+            'tag': 'title',
+            'children': [{
+                'tag': 'jinjablock',
+                'value': 'title'
+            }]
+        }])
 
     def test_jinja_for(self):
         html_string = """
@@ -155,14 +163,104 @@ class JinjaTestCase(unittest.TestCase):
         """
 
         tree = self.parser.parseFragment(html_string)
+
+        self.assertTree(tree, [{
+            'tag': 'jinjafor',
+            'value': 'a in b',
+            'children': [{
+                'tag': 'jinjavariabletag',
+                'children': [{
+                    'tag': 'jinjavariable',
+                    'value': 'a'
+                }]
+            }]
+        }])
+
+    def test_complete_doc(self):
+        html_string = """
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <title>My Webpage</title>
+            </head>
+            <body>
+                <ul id="navigation">
+                {% for item in navigation %}
+                    <li><a href="{{ item.href }}">{{ item.caption }}</a></li>
+                {% endfor %}
+                </ul>
+
+                <h1>My Webpage</h1>
+                {{ a_variable }}
+            </body>
+            </html>
+        """
+
+        tree = self.parser.parse(html_string)
+        dump(tree)
+        self.assertTree(tree, [{
+            'tag': 'head',
+            'children': [{
+                'tag': 'title',
+                'text': 'My Webpage'
+            }]
+        }, {
+            'tag': 'body',
+            'children': [{
+                'tag': 'ul',
+                'children': [{
+                    'tag': 'jinjafor',
+                    'value': 'item in navigation',
+                    'children': [{
+                        'tag': 'li',
+                        'children': [{
+                            'tag': 'a',
+                            'children': [{
+                                'tag': 'jinjavariabletag',
+                                'children': [{
+                                    'tag': 'jinjavariable',
+                                    'value': 'item.caption'
+                                }]
+                            }]
+                        }]
+                    }]
+                }]
+            }, {
+                'tag': 'h1',
+                'text': 'My Webpage'
+            }, {
+                'tag': 'jinjavariabletag',
+                'children': [{
+                    'tag': 'jinjavariable',
+                    'value': 'a_variable'
+                }]
+            }]
+        }])
+
+    def test_jinja_if(self):
+        html_string = """
+            {% if True %}yay{% endif %}
+        """
+
+        tree = self.parser.parseFragment(html_string)
         dump(tree)
 
-        block = tree[0]
-        var = block[0]
-        var1 = var[0]
+        self.assertTree(tree, [{
+            'tag': 'jinjaif',
+            'text': 'yay'
+        }])
 
-        self.assertEqual(block.tag, 'jinjafor')
-        self.assertEqual(block.attrib['value'], 'a in b')
-        self.assertEqual(var.tag, 'jinjavariabletag')
-        self.assertEqual(var1.tag, 'jinjavariable')
-        self.assertEqual(var1.attrib['value'], 'a')
+    def assertTree(self, root, spec):
+        self.assertEqual(len(root), len(spec))
+
+        for child, spec_child in zip(root, spec):
+            self.assertEqual(child.tag, spec_child['tag'])
+
+            if 'text' in spec_child:
+                self.assertEqual(child.text, spec_child['text'])
+
+            if 'value' in spec_child:
+                self.assertEqual(child.attrib['value'], spec_child['value'])
+
+            if 'children' in spec_child:
+                self.assertTree(child, spec_child['children'])
