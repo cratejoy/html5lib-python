@@ -233,7 +233,7 @@ class HTMLTokenizer(object):
         """
         self.consumeEntity(allowedChar=allowedChar, fromAttribute=True)
 
-    def emitCurrentToken(self):
+    def emitCurrentToken(self, resetState=True):
         """This method is a generic handler for emitting the tags. It also sets
         the state to "data" because that's what's needed after a token has been
         emitted.
@@ -251,7 +251,9 @@ class HTMLTokenizer(object):
                     self.tokenQueue.append({"type": tokenTypes["ParseError"],
                                             "data": "self-closing-flag-on-end-tag"})
         self.tokenQueue.append(token)
-        self.state = self.dataState
+
+        if resetState:
+            self.state = self.dataState
 
     # Below are the various tokenizer states worked out.
     def dataState(self):
@@ -508,8 +510,9 @@ class HTMLTokenizer(object):
                                     }}
             self.tokenQueue.append(self.currentToken)
         # If this is the first token after the variable start tag
-        elif self.currentToken['type'] == tokenTypes["JinjaVariableStartTag"]:
-            #log.debug(u"Got start tag {}".format(("|", "}", "\u0000") | spaceCharacters))
+        elif self.currentToken['type'] == tokenTypes["JinjaVariableStartTag"]\
+                or self.currentToken['type'] == tokenTypes["JinjaVariable"]:
+                #log.debug(u"Got start tag {}".format(("|", "}", "\u0000") | spaceCharacters))
 
             chars = self.stream.charsUntil(frozenset(("(", "|", "}", "\u0000")) | spaceCharacters)
             self.currentToken = {"type": tokenTypes["JinjaVariable"], 

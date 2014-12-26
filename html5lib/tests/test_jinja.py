@@ -21,6 +21,7 @@ class JinjaTestCase(unittest.TestCase):
         html_string = """<h1>{{ hi }}</h1>"""
 
         tree = self.parser.parseFragment(html_string)
+        dump(tree)
 
         self.assertTree(tree, [{
             'tag': 'h1',
@@ -37,6 +38,7 @@ class JinjaTestCase(unittest.TestCase):
         html_string = """<h1>{{ a.b }}</h1>"""
 
         tree = self.parser.parseFragment(html_string)
+        dump(tree)
 
         self.assertTree(tree, [{
             'tag': 'h1',
@@ -337,6 +339,34 @@ class JinjaTestCase(unittest.TestCase):
         }, {
             'tag': 'jinjaimport',
             'value': "'forms.html' import input as input_field, textarea"
+        }])
+
+    def test_inline_if(self):
+        html_string = """
+            {{ '[%s]' % page.title if page.title }}
+        """
+
+        tree = self.parser.parseFragment(html_string)
+        dump(tree)
+
+        self.assertTree(tree, [{
+            'tag': 'jinjavariabletag',
+            'children': [{
+                'tag': 'jinjavariable',
+                'value': "'[%s]'"
+            }, {
+                'tag': 'jinjavariable',
+                'value': "%"
+            }, {
+                'tag': 'jinjavariable',
+                'value': "page.title"
+            }, {
+                'tag': 'jinjavariable',
+                'value': "if"
+            }, {
+                'tag': 'jinjavariable',
+                'value': "page.title"
+            }]
         }])
 
     def assertTree(self, root, spec):
