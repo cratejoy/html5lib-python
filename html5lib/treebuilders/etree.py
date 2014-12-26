@@ -63,7 +63,6 @@ def getETreeBuilder(ElementTreeImplementation, fullTree=False):
             return self._element.attrib
 
         def _setAttributes(self, attributes):
-            log.debug(u"Attributes {}".format(attributes))
             # Delete existing attributes first
             # XXX - there may be a better way to do this...
             for key in list(self._element.attrib.keys()):

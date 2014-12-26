@@ -328,31 +328,66 @@ class HTMLTokenizer(object):
                                     "eof-in-jinja-statement"})
             self.state = self.prevState
         else:
+            attrs = {}
+
+            if data in ['-', '+']:
+                attrs['lstrip'] = False
+
+                data = self.stream.char()
+                while data in spaceCharacters:
+                    data = self.stream.char()
+
             block_type = data + self.stream.charsUntil(frozenset(("%")) | spaceCharacters)
 
             block_definition = self.stream.charsUntil(frozenset(("%", "\u0000")))
 
             block_definition = block_definition.strip(" \t")
 
+            if block_definition and block_definition[-1] == '-':
+                attrs['rstrip'] = True
+                block_definition = block_definition[:-1].rstrip()
+
+            attrs.update({
+                "value": block_definition,
+                "position": self.stream.position()
+            })
+
             if block_type.startswith("end"):
                 block_type = block_type.replace("end", "")
+                attrs['value'] = block_type.lower()
 
                 self.tokenQueue.append({
                     "type": tokenTypes["JinjaStatementEndTag"],
                     'name': u"jinja{}".format(block_type.lower()),
-                    "data": {
-                        "position": self.stream.position()
-                    },
+                    "data": attrs,
                     "selfClosing": False
+                })
+            elif block_type == "extends":
+                self.tokenQueue.append({
+                    "type": tokenTypes["JinjaExtendTag"],
+                    'name': u"jinja{}".format(block_type.lower()),
+                    "data": attrs,
+                    "selfClosing": True
+                })
+            elif block_type == "include":
+                self.tokenQueue.append({
+                    "type": tokenTypes["JinjaIncludeTag"],
+                    'name': u"jinja{}".format(block_type.lower()),
+                    "data": attrs,
+                    "selfClosing": True
+                })
+            elif block_type in ["import", "from"]:
+                self.tokenQueue.append({
+                    "type": tokenTypes["JinjaImportTag"],
+                    'name': u"jinjaimport",
+                    "data": attrs,
+                    "selfClosing": True
                 })
             else:
                 self.tokenQueue.append({
                     "type": tokenTypes["JinjaStatementStartTag"],
                     'name': u"jinja{}".format(block_type.lower()),
-                    "data": {
-                        "value": block_definition,
-                        "position": self.stream.position()
-                    },
+                    "data": attrs,
                     "selfClosing": False
                 })
 

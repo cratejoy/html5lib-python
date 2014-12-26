@@ -177,6 +177,9 @@ class HTMLParser(object):
         JinjaArgumentStartTag = tokenTypes["JinjaArgumentStartTag"]
         JinjaArgumentEndTag = tokenTypes["JinjaArgumentEndTag"]
         JinjaArgument = tokenTypes["JinjaArgument"]
+        JinjaExtendTag = tokenTypes["JinjaExtendTag"]
+        JinjaIncludeTag = tokenTypes["JinjaIncludeTag"]
+        JinjaImportTag = tokenTypes["JinjaImportTag"]
 
         for token in self.normalizedTokens():
             new_token = token
@@ -193,13 +196,10 @@ class HTMLParser(object):
                     new_token = None
                 else:
                     if type in (JinjaVariableStartTag, JinjaVariableEndTag, JinjaVariable, JinjaFilter, JinjaPipe):
-                        log.debug(u"Type is a jinja variable tag")
                         phase = self.phases["inJinjaVariable"]
                     elif type in (JinjaStatementStartTag, JinjaStatementEndTag, JinjaStatement):
-                        log.debug(u"Type is a jinja statement tag")
                         phase = self.phases["inJinjaStatement"]
                     elif type in (JinjaArgumentStartTag, JinjaArgumentEndTag, JinjaArgument):
-                        log.debug(u"Type is a jinja argument tag")
                         phase = self.phases["inJinjaArgument"]
                     elif (
                         len(self.tree.openElements) == 0 or
@@ -251,6 +251,12 @@ class HTMLParser(object):
                         new_token = phase.processJinjaArgumentEndTag(new_token)
                     elif type == JinjaArgument:
                         new_token = phase.processJinjaArgument(new_token)
+                    elif type == JinjaExtendTag:
+                        new_token = phase.processJinjaExtendTag(new_token)
+                    elif type == JinjaIncludeTag:
+                        new_token = phase.processJinjaIncludeTag(new_token)
+                    elif type == JinjaImportTag:
+                        new_token = phase.processJinjaImportTag(new_token)
 
             if (type == StartTagToken and token["selfClosing"]
                     and not token["selfClosingAcknowledged"]):
@@ -545,6 +551,18 @@ def getPhases(debug):
 
         def processJinjaVariable(self, token):
             pass
+
+        def processJinjaExtendTag(self, token):
+            element = self.tree.createElementWithoutNamespace(token)
+            self.tree.openElements[-1].appendChild(element)
+
+        def processJinjaIncludeTag(self, token):
+            element = self.tree.createElementWithoutNamespace(token)
+            self.tree.openElements[-1].appendChild(element)
+
+        def processJinjaImportTag(self, token):
+            element = self.tree.createElementWithoutNamespace(token)
+            self.tree.openElements[-1].appendChild(element)
 
         def processJinjaArgumentStartTag(self, token):
             pass

@@ -40,7 +40,7 @@ class MoreParserTests(unittest.TestCase):
     def test_namespace_html_elements_0_etree(self):
         parser = html5parser.HTMLParser(namespaceHTMLElements=True)
         doc = parser.parse("<html></html>")
-        self.assertTrue(list(doc)[0].tag == "{%s}html" % (namespaces["html"],))
+        self.assertEqual(list(doc)[0].tag, "{%s}html" % (namespaces["html"],))
 
     def test_namespace_html_elements_1_etree(self):
         parser = html5parser.HTMLParser(namespaceHTMLElements=False)

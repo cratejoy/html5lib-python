@@ -15,7 +15,7 @@ def dump(tree, tabs=0):
 
 class JinjaTestCase(unittest.TestCase):
     def setUp(self):
-        self.parser = html5lib.HTMLParser(strict=True, namespaceHTMLElements=False)
+        self.parser = html5lib.HTMLParser(strict=True, namespaceHTMLElements=False, tree=html5lib.treebuilders.getTreeBuilder("etree", fullTree=True))
 
     def test_var_1(self):
         html_string = """<h1>{{ hi }}</h1>"""
@@ -197,42 +197,48 @@ class JinjaTestCase(unittest.TestCase):
         """
 
         tree = self.parser.parse(html_string)
-        dump(tree)
+
         self.assertTree(tree, [{
-            'tag': 'head',
-            'children': [{
-                'tag': 'title',
-                'text': 'My Webpage'
-            }]
+            'tag': '<!DOCTYPE>',
+            'text': 'html'
         }, {
-            'tag': 'body',
+            'tag': 'html',
             'children': [{
-                'tag': 'ul',
+                'tag': 'head',
                 'children': [{
-                    'tag': 'jinjafor',
-                    'value': 'item in navigation',
+                    'tag': 'title',
+                    'text': 'My Webpage'
+                }]
+            }, {
+                'tag': 'body',
+                'children': [{
+                    'tag': 'ul',
                     'children': [{
-                        'tag': 'li',
+                        'tag': 'jinjafor',
+                        'value': 'item in navigation',
                         'children': [{
-                            'tag': 'a',
+                            'tag': 'li',
                             'children': [{
-                                'tag': 'jinjavariabletag',
+                                'tag': 'a',
                                 'children': [{
-                                    'tag': 'jinjavariable',
-                                    'value': 'item.caption'
+                                    'tag': 'jinjavariabletag',
+                                    'children': [{
+                                        'tag': 'jinjavariable',
+                                        'value': 'item.caption'
+                                    }]
                                 }]
                             }]
                         }]
                     }]
-                }]
-            }, {
-                'tag': 'h1',
-                'text': 'My Webpage'
-            }, {
-                'tag': 'jinjavariabletag',
-                'children': [{
-                    'tag': 'jinjavariable',
-                    'value': 'a_variable'
+                }, {
+                    'tag': 'h1',
+                    'text': 'My Webpage'
+                }, {
+                    'tag': 'jinjavariabletag',
+                    'children': [{
+                        'tag': 'jinjavariable',
+                        'value': 'a_variable'
+                    }]
                 }]
             }]
         }])
@@ -250,6 +256,89 @@ class JinjaTestCase(unittest.TestCase):
             'text': 'yay'
         }])
 
+    def test_jinja_if_lstrip(self):
+        html_string = """
+            {%+ if True %}yay{% endif %}
+        """
+
+        tree = self.parser.parseFragment(html_string)
+        dump(tree)
+
+        self.assertTree(tree, [{
+            'tag': 'jinjaif',
+            'text': 'yay',
+            'attrs': {
+                'lstrip': False
+            }
+        }])
+
+    def test_jinja_strip_blocks(self):
+        html_string = """
+            {% for item in seq -%}
+                {{ item }}
+            {%- endfor %}
+        """
+
+        tree = self.parser.parseFragment(html_string)
+        dump(tree)
+
+        self.assertTree(tree, [{
+            'tag': 'jinjafor',
+            'attrs': {
+                'rstrip': True
+            },
+            'children': [{
+                'tag': 'jinjavariabletag',
+                'children': [{
+                    'tag': 'jinjavariable',
+                    'value': 'item'
+                }]
+            }]
+        }])
+
+    def test_jinja_extend(self):
+        html_string = """
+            {% extends "base.html" %}
+        """
+
+        tree = self.parser.parseFragment(html_string)
+        dump(tree)
+
+        self.assertTree(tree, [{
+            'tag': 'jinjaextends',
+            'value': '"base.html"'
+        }])
+
+    def test_jinja_include(self):
+        html_string = """
+            {% include ['special_sidebar.html', 'sidebar.html'] ignore missing %}
+        """
+
+        tree = self.parser.parseFragment(html_string)
+        dump(tree)
+
+        self.assertTree(tree, [{
+            'tag': 'jinjainclude',
+            'value': "['special_sidebar.html', 'sidebar.html'] ignore missing"
+        }])
+
+    def test_jinja_import(self):
+        html_string = """
+            {% import 'forms.html' as forms %}
+            {% from 'forms.html' import input as input_field, textarea %}
+        """
+
+        tree = self.parser.parseFragment(html_string)
+        dump(tree)
+
+        self.assertTree(tree, [{
+            'tag': 'jinjaimport',
+            'value': "'forms.html' as forms"
+        }, {
+            'tag': 'jinjaimport',
+            'value': "'forms.html' import input as input_field, textarea"
+        }])
+
     def assertTree(self, root, spec):
         self.assertEqual(len(root), len(spec))
 
@@ -264,3 +353,10 @@ class JinjaTestCase(unittest.TestCase):
 
             if 'children' in spec_child:
                 self.assertTree(child, spec_child['children'])
+            else:
+                self.assertEqual(len(child), 0)
+
+            if 'attrs' in spec_child:
+                for k, v in spec_child['attrs'].iteritems():
+                    self.assertIn(k, child.attrib)
+                    self.assertEqual(v, child.attrib[k])
