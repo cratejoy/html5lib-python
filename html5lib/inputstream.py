@@ -4,6 +4,7 @@ from six.moves import http_client
 
 import codecs
 import re
+import logging
 
 from .constants import EOF, spaceCharacters, asciiLetters, asciiUppercase
 from .constants import encodings, ReparseException
@@ -42,6 +43,8 @@ ascii_punctuation_re = re.compile("[\u0009-\u000D\u0020-\u002F\u003A-\u0040\u005
 
 # Cache for charsUntil()
 charsUntilRegEx = {}
+
+log = logging.getLogger(u"html5lib")
 
 
 class BufferedStream(object):

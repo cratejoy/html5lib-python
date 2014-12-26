@@ -180,6 +180,7 @@ class HTMLParser(object):
         JinjaExtendTag = tokenTypes["JinjaExtendTag"]
         JinjaIncludeTag = tokenTypes["JinjaIncludeTag"]
         JinjaImportTag = tokenTypes["JinjaImportTag"]
+        JinjaComment = tokenTypes["JinjaComment"]
 
         for token in self.normalizedTokens():
             new_token = token
@@ -243,6 +244,8 @@ class HTMLParser(object):
                         new_token = phase.processJinjaVariable(new_token)
                     elif type == JinjaPipe:
                         new_token = phase.processJinjaPipe(new_token)
+                    elif type == JinjaComment:
+                        new_token = phase.processJinjaComment(new_token)
                     elif type == JinjaFilter:
                         new_token = phase.processJinjaFilter(new_token)
                     elif type == JinjaArgumentStartTag:
@@ -557,6 +560,10 @@ def getPhases(debug):
             self.tree.openElements[-1].appendChild(element)
 
         def processJinjaIncludeTag(self, token):
+            element = self.tree.createElementWithoutNamespace(token)
+            self.tree.openElements[-1].appendChild(element)
+
+        def processJinjaComment(self, token):
             element = self.tree.createElementWithoutNamespace(token)
             self.tree.openElements[-1].appendChild(element)
 

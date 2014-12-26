@@ -369,6 +369,19 @@ class JinjaTestCase(unittest.TestCase):
             }]
         }])
 
+    def test_comment(self):
+        html_string = """
+            {# {{ '[%s]' % page.title if page.title }} #}
+        """
+
+        tree = self.parser.parseFragment(html_string)
+        dump(tree)
+
+        self.assertTree(tree, [{
+            'tag': 'jinjacomment',
+            'value': "{{ '[%s]' % page.title if page.title }} "
+        }])
+
     def assertTree(self, root, spec):
         self.assertEqual(len(root), len(spec))
 

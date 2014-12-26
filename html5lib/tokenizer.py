@@ -311,6 +311,8 @@ class HTMLTokenizer(object):
             self.state = self.jinjaVariableState
         elif data == "%":
             self.state = self.jinjaStatementStartState
+        elif data == "#":
+            self.state = self.jinjaCommentStartState
         else:
             self.stream.unget(data)
             self.stream.unget("{")
@@ -401,6 +403,59 @@ class HTMLTokenizer(object):
             if data != '}':
                 self.tokenQueue.append({"type": tokenTypes["ParseError"], "data":
                                         "no-close-of-jinja-statement"})
+
+            self.state = self.dataState
+
+        return True
+
+    def jinjaCommentStartState(self):
+        data = self.stream.char()
+
+        if data in spaceCharacters:
+            pass
+        elif data is EOF:
+            self.tokenQueue.append({"type": tokenTypes["ParseError"], "data":
+                                    "eof-in-jinja-statement"})
+            self.state = self.prevState
+        else:
+            comment_text = data + self.stream.charsUntil(frozenset(("#", "\u0000")))
+            next_two = self.stream.char()
+
+            if next_two:
+                next_two += self.stream.char()
+
+            if not next_two or len(next_two) < 2:
+                log.debug(u"Comment text {} = {}".format(comment_text, len(self.stream.chunk)))
+                self.tokenQueue.append({"type": tokenTypes["ParseError"], "data":
+                                        "expected-jinja-comment-closing-tag-but-got-eof",
+                                        "datavars": {"data": data}})
+                self.state = self.bogusCommentState
+                return True
+
+            while next_two != "#}":
+                comment_text += self.stream.chunk + self.stream.charsUntil(frozenset(("#", "\u0000")))
+
+                next_two = self.stream.char()
+
+                if next_two:
+                    next_two += self.stream.char()
+
+                if not next_two or len(next_two) < 2:
+                    self.tokenQueue.append({"type": tokenTypes["ParseError"], "data":
+                                            "expected-jinja-comment-closing-tag-but-got-eof",
+                                            "datavars": {"data": data}})
+                    self.state = self.bogusCommentState
+                    return True
+
+            self.tokenQueue.append({
+                "type": tokenTypes["JinjaComment"],
+                'name': u"jinjacomment",
+                "data": {
+                    "value": comment_text,
+                    "position": self.stream.position()
+                },
+                "selfClosing": True
+            })
 
             self.state = self.dataState
 
