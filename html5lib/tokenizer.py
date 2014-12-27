@@ -258,7 +258,6 @@ class HTMLTokenizer(object):
     # Below are the various tokenizer states worked out.
     def dataState(self):
         data = self.stream.char()
-        log.debug(u"Tokenizer DataState {}".format(data))
 
         if data == "&":
             self.state = self.entityDataState
@@ -539,7 +538,7 @@ class HTMLTokenizer(object):
 
         if data == "}":
             self.state = self.jinjaVariableEndState
-        elif data == "(":
+        elif data == "(" and self.currentToken['type'] in [tokenTypes["JinjaVariable"], tokenTypes["JinjaFilter"]]:
             self.currentToken = {
                 "type": tokenTypes["JinjaArgumentStartTag"],
                 "name": u"jinjaargumentstarttag", "data": {},
@@ -594,8 +593,6 @@ class HTMLTokenizer(object):
 
     def jinjaArgState(self):
         data = self.stream.char()
-
-        log.debug(u"Arg {}".format(data))
 
         if data == ")":
             self.tokenQueue.append({

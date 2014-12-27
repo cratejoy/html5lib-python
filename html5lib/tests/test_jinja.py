@@ -17,6 +17,28 @@ class JinjaTestCase(unittest.TestCase):
     def setUp(self):
         self.parser = html5lib.HTMLParser(strict=True, namespaceHTMLElements=False, tree=html5lib.treebuilders.getTreeBuilder("etree", fullTree=True))
 
+    def assertTree(self, root, spec):
+        self.assertEqual(len(root), len(spec))
+
+        for child, spec_child in zip(root, spec):
+            self.assertEqual(child.tag, spec_child['tag'])
+
+            if 'text' in spec_child:
+                self.assertEqual(child.text, spec_child['text'])
+
+            if 'value' in spec_child:
+                self.assertEqual(child.attrib['value'], spec_child['value'])
+
+            if 'children' in spec_child:
+                self.assertTree(child, spec_child['children'])
+            else:
+                self.assertEqual(len(child), 0)
+
+            if 'attrs' in spec_child:
+                for k, v in spec_child['attrs'].iteritems():
+                    self.assertIn(k, child.attrib)
+                    self.assertEqual(v, child.attrib[k])
+
     def test_var_1(self):
         html_string = """<h1>{{ hi }}</h1>"""
 
@@ -142,6 +164,18 @@ class JinjaTestCase(unittest.TestCase):
             'text': 'Hi'
         }])
 
+    def test_jinja_block_named(self):
+        html_string = """
+            {% block title %}Hi{% endblock title %}
+        """
+
+        tree = self.parser.parseFragment(html_string)
+
+        self.assertTree(tree, [{
+            'tag': 'jinjablock',
+            'text': 'Hi'
+        }])
+
     def test_jinja_block_in_title(self):
         html_string = """
         <title>{% block title %}{% endblock %}</title>
@@ -256,6 +290,41 @@ class JinjaTestCase(unittest.TestCase):
         self.assertTree(tree, [{
             'tag': 'jinjaif',
             'text': 'yay'
+        }])
+
+    def test_jinja_if_else(self):
+        html_string = """
+            {% if True %}yay{% else %}boo{% endif %}
+        """
+
+        tree = self.parser.parseFragment(html_string)
+        dump(tree)
+
+        self.assertTree(tree, [{
+            'tag': 'jinjaif',
+            'text': 'yay'
+        }, {
+            'tag': 'jinjaelse',
+            'text': 'boo'
+        }])
+
+    def test_jinja_if_elif_else(self):
+        html_string = """
+            {% if True %}yay{% elif False %}too{% else %}boo{% endif %}
+        """
+
+        tree = self.parser.parseFragment(html_string)
+        dump(tree)
+
+        self.assertTree(tree, [{
+            'tag': 'jinjaif',
+            'text': 'yay'
+        }, {
+            'tag': 'jinjaelif',
+            'text': 'too'
+        }, {
+            'tag': 'jinjaelse',
+            'text': 'boo'
         }])
 
     def test_jinja_if_lstrip(self):
@@ -382,24 +451,34 @@ class JinjaTestCase(unittest.TestCase):
             'value': "{{ '[%s]' % page.title if page.title }} "
         }])
 
-    def assertTree(self, root, spec):
-        self.assertEqual(len(root), len(spec))
+    def test_file(self):
+        html_string = """
+            <h4>{{ (term_price.price / term_price.term.num_cycles) | currency }}/month</h4>
 
-        for child, spec_child in zip(root, spec):
-            self.assertEqual(child.tag, spec_child['tag'])
+        """
 
-            if 'text' in spec_child:
-                self.assertEqual(child.text, spec_child['text'])
+        tree = self.parser.parseFragment(html_string)
+        dump(tree)
 
-            if 'value' in spec_child:
-                self.assertEqual(child.attrib['value'], spec_child['value'])
-
-            if 'children' in spec_child:
-                self.assertTree(child, spec_child['children'])
-            else:
-                self.assertEqual(len(child), 0)
-
-            if 'attrs' in spec_child:
-                for k, v in spec_child['attrs'].iteritems():
-                    self.assertIn(k, child.attrib)
-                    self.assertEqual(v, child.attrib[k])
+        self.assertTree(tree, [{
+            'tag': 'h4',
+            'children': [{
+                'tag': 'jinjavariabletag',
+                'children': [{
+                    'tag': 'jinjavariable',
+                    'value': '(term_price.price'
+                }, {
+                    'tag': 'jinjavariable',
+                    'value': '/'
+                }, {
+                    'tag': 'jinjavariable',
+                    'value': 'term_price.term.num_cycles)'
+                }, {
+                    'tag': 'jinjapipe',
+                    'value': '|'
+                }, {
+                    'tag': 'jinjafilter',
+                    'value': 'currency'
+                }]
+            }]
+        }])
