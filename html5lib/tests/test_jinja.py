@@ -482,3 +482,68 @@ class JinjaTestCase(unittest.TestCase):
                 }]
             }]
         }])
+
+    def test_embedded_block(self):
+        html_string = """
+            <a href="/whatever" class="headerlink {% if on_whatever %}active{% endif %}">Whatever</a>
+            <input type="checkbox" name="mycheck" {% if mycheck_selected %}checked{% endif %}/>
+        """
+
+        tree = self.parser.parseFragment(html_string)
+        dump(tree)
+        #self.fail()
+
+        #self.assertTree(tree, [{
+        #'tag': 'jinjacomment',
+        #'value': "{{ '[%s]' % page.title if page.title }} "
+        #}])
+
+    def test_open_block(self):
+        html_string = """
+            <!-- If you're looking for the shared template that contains -->
+            <!-- the header and footer, look in html/base.html -->
+            {% extends "base.html" %}
+
+            {% block header_tag %}
+            <header class="sheader header-index" data-barley="index_bg_img" data-barley-editor="bgimage" data-width="1400" data-height="740" style="background-image: url('{{ 'images/bg-get-books.jpg' | asset_url }}');">
+            {% endblock %}
+
+            {% block header_content %}
+            {{ super() }}
+
+            <div class="row content">
+              <section class="col-md-5 col-sm-8">
+                <h1 class="heading index-bnr-grp" data-barley="index_cta_heading" data-barley-editor="simple">Get handpicked books delivered every month.</h1>
+                <p class="drk-desc-grp" data-barley="index_cta_text" data-barley-editor="simple">Praesent dapibus, neque id cursus faucibus, tortor neque egestas augue, eu vulputate magna eros eu erat. Faucibus, tortor praesent neque id dapibus.</p>
+                <br>
+                <div class="row hidden-xs cta-btn-row">
+                    <a type="button" class="btn btn-success lt-btn-grp" href="/subscribe" data-barley="index_cta_main" data-barley-editor="link">get started</a><div class="cta-or" data-barley="cta_or" data-barley-editor="simple">OR</div><a type="button" class="btn btn-primary drk-btn-grp" href="/subscribe/gift" data-barley="index_cta_gift" data-barley-editor="link">give a gift</a>
+                </div>
+              </section>
+            </div>
+
+            {% endblock %}
+
+            {% block page_content %}
+
+            <div class="container visible-xs">
+              <div class="row cta-btn-row-xs">
+                  <a type="button" class="btn btn-success lt-btn-grp" href="/subscribe" data-barley="index_cta_main_xs" data-barley-editor="link">get started</a>
+                  <a type="button" class="btn btn-primary dark-btn-grp" href="/subscribe/gift" data-barley="index_cta_gift_xs" data-barley-editor="link">give a gift</a>
+              </div>
+            </div>
+
+            <div class="fpanel">
+              <div class="container">
+                <section>
+                  <h2 class="heading h-section lrg-heading-grp" data-barley="index_hiw_heading" data-barley-editor="simple">What is BookSea?</h2>
+                  <p data-barley="index_hiw_text_1" data-barley-editor="simple">Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Donec odio. Quisque volutpat tmattis eros. Nullam malesuada erat ut turpis. Suspendisse urna nibh, viverra non, semper suscipit, posuere a, pede. Donec nec justo eget felis facilisis fermentum. Aliquam porttitor mauris sit amet orci. Aenean dignissim pellentesque felis.Morbi in sem quis dui placerat ornare. Pellentesque odio nisi, euismod in, pharetra a, ultricies in, diam. Sed arcu. Cras consequat.</p>
+                  <p data-barley="index_hiw_text_2" data-barley-editor="simple">Praesent dapibus, neque id cursus faucibus, tortor neque egestas augue, eu vulputate magna eros eu erat. Aliquam erat volutpat. Nam dui mi, tincidunt quis, accumsan porttitor, facilisis luctus, metus.</p>
+                </section>
+              </div>
+            </div>
+
+            {% include "components/descriptions.html" %}
+        """
+        tree = self.parser.parseFragment(html_string)
+        dump(tree)

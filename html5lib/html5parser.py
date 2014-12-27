@@ -185,7 +185,7 @@ class HTMLParser(object):
         for token in self.normalizedTokens():
             new_token = token
             while new_token is not None:
-                #log.debug(u"Token {} Phase = {}".format(new_token, self.phase))
+                log.debug(u"Token {} Phase = {}".format(new_token, self.phase))
                 currentNode = self.tree.openElements[-1] if self.tree.openElements else None
                 currentNodeNamespace = currentNode.namespace if currentNode else None
                 currentNodeName = currentNode.name if currentNode else None
@@ -640,8 +640,8 @@ def getPhases(debug):
             self.tree.insertElement(token)
 
         def closeOpenIf(self, token):
-            import logging
-            log = logging.getLogger(u"html5lib")
+            #import logging
+            #log = logging.getLogger(u"html5lib")
 
             for node in self.tree.openElements[::-1]:
                 #log.debug(u"Prev {} Cur {}".format(node.name, token['name']))
@@ -663,6 +663,9 @@ def getPhases(debug):
                         break
 
         def processJinjaStatementEndTag(self, token):
+            import logging
+            log = logging.getLogger(u"html5lib")
+
             for node in self.tree.openElements[::-1]:
                 if node.name == token["name"] or (node.name in ["jinjaelse", "jinjaelif"] and token["name"] == "jinjaif"):
                     self.tree.generateImpliedEndTags(exclude=token["name"])
@@ -671,13 +674,13 @@ def getPhases(debug):
                         pass
                     elif self.tree.openElements[-1].name != token["name"]:
                         self.parser.parseError("unexpected-end-tag", {"name": token["name"]})
+
                     while self.tree.openElements.pop() != node:
                         pass
                     break
                 else:
-                    if node.nameTuple in specialElements:
-                        self.parser.parseError("unexpected-end-tag", {"name": token["name"]})
-                        break
+                    log.debug(u"Node {}".format(node.name))
+                    self.tree.openElements.pop()
 
         def processJinjaStatement(self, token):
             element = self.tree.createElementWithoutNamespace(token)
@@ -1173,6 +1176,9 @@ def getPhases(debug):
                                           "tfoot", "th", "thead", "tr", "body",
                                           "html"))
             for node in self.tree.openElements[::-1]:
+                if node.name.startswith("jinja"):
+                    continue
+
                 if node.name not in allowed_elements:
                     self.parser.parseError("expected-closing-tag-but-got-eof")
                     break
