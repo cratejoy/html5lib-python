@@ -168,6 +168,7 @@ class HTMLParser(object):
         ParseErrorToken = tokenTypes["ParseError"]
 
         for token in self.normalizedTokens():
+            #log.debug(u"Token {}".format(token))
             new_token = token
             while new_token is not None:
                 currentNode = self.tree.openElements[-1] if self.tree.openElements else None

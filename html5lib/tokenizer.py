@@ -311,6 +311,14 @@ class HTMLTokenizer(object):
             #})
 
             self.state = self.jinjaStatementState
+        elif data == "#":
+            #self.tokenQueue.append({
+                #"type": tokenTypes["JinjaStatementStartTag"],
+                #"name": "{%", "data": {},
+                #"selfClosing": False
+            #})
+
+            self.state = self.jinjaCommentState
 
         #self.state = self.dataState
         return True
@@ -359,6 +367,28 @@ class HTMLTokenizer(object):
         #self.state = self.dataState
         return True
 
+    def jinjaCommentEndState(self):
+        # We got a {
+        data = self.stream.char()
+
+        if data == "}":
+            #self.tokenQueue.append({
+                #"type": tokenTypes["JinjaVariableEndTag"],
+                #"name": "}}", "data": [],
+                #"selfClosing": False
+            #})
+            self.state = self.dataState
+        elif data is EOF:
+            self.tokenQueue.append({"type": tokenTypes["ParseError"], "data":
+                                    "expected-jinja-comment-closing-tag-but-got-eof",
+                                    "datavars": {"data": data}})
+            self.state = self.dataState
+        else:
+            self.state = self.jinjaStatementState
+
+        #self.state = self.dataState
+        return True
+
     def jinjaStatementState(self):
         data = self.stream.char()
 
@@ -370,6 +400,24 @@ class HTMLTokenizer(object):
             self.state = self.dataState
         else:
             chars = self.stream.charsUntil(("%", "\u0000"))
+            #self.tokenQueue.append({"type": tokenTypes["JinjaStatementTag"], "data":
+                                    #data + chars})
+
+        return True
+
+    def jinjaCommentState(self):
+        data = self.stream.char()
+
+        log.debug(u"Jinja comment state '{}'".format(data))
+
+        if data == "#":
+            self.state = self.jinjaCommentEndState
+        elif data is EOF:
+            self.tokenQueue.append({"type": tokenTypes["ParseError"], "data":
+                                    "missing-jinja-comment-closing-brace"})
+            self.state = self.dataState
+        else:
+            chars = self.stream.charsUntil(("#", "\u0000"))
             #self.tokenQueue.append({"type": tokenTypes["JinjaStatementTag"], "data":
                                     #data + chars})
 
