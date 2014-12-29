@@ -408,7 +408,7 @@ class HTMLTokenizer(object):
     def jinjaCommentState(self):
         data = self.stream.char()
 
-        log.debug(u"Jinja comment state '{}'".format(data))
+        #log.debug(u"Jinja comment state '{}'".format(data))
 
         if data == "#":
             self.state = self.jinjaCommentEndState
